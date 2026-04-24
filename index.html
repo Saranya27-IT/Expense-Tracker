@@ -1,0 +1,354 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Expense Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f3ee;
+    --surface: #ffffff;
+    --border: #e2ddd6;
+    --accent: #2d6a4f;
+    --accent-light: #d8f3dc;
+    --danger: #c0392b;
+    --danger-light: #fdecea;
+    --text: #1a1a1a;
+    --muted: #7a7068;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    max-width: 860px;
+    margin: 0 auto 2rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1.5px solid var(--text);
+    padding-bottom: 1rem;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  header span {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .layout {
+    max-width: 860px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .card h2 {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.2rem;
+  }
+
+  .total-block {
+    background: var(--accent);
+    border-radius: 10px;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+    color: white;
+  }
+
+  .total-block .label {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+
+  .total-block .amount {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 500;
+  }
+
+  form label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+    margin-top: 1rem;
+  }
+
+  form label:first-of-type { margin-top: 0; }
+
+  form input, form select {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  form input:focus, form select:focus {
+    border-color: var(--accent);
+    background: white;
+  }
+
+  form button {
+    margin-top: 1.2rem;
+    width: 100%;
+    padding: 0.65rem;
+    background: var(--text);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  form button:hover { opacity: 0.8; }
+
+  .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .chart-wrap { height: 180px; position: relative; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  thead th {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0 0 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+
+  tbody td {
+    padding: 0.7rem 0;
+    vertical-align: middle;
+  }
+
+  .cat-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+
+  .amt {
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+
+  .del-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+
+  .del-btn:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: var(--danger-light);
+  }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    padding: 2rem 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>// expense tracker</h1>
+  <span>personal finance log</span>
+</header>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <div class="total-block">
+        <div class="label">Total Spent</div>
+        <div class="amount">₹{{ "%.2f"|format(total) }}</div>
+      </div>
+
+      <h2>Add Expense</h2>
+      <form action="/add" method="POST">
+        <label>Title</label>
+        <input type="text" name="title" placeholder="e.g. Lunch, Bus pass" required />
+
+        <label>Amount (₹)</label>
+        <input type="number" name="amount" placeholder="0.00" step="0.01" min="0" required />
+
+        <label>Category</label>
+        <select name="category" required>
+          <option value="">Select...</option>
+          <option value="Food">Food</option>
+          <option value="Transport">Transport</option>
+          <option value="Education">Education</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Health">Health</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <label>Date</label>
+        <input type="date" name="date" required />
+
+        <button type="submit">+ Add Expense</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="right-col">
+    {% if category_totals %}
+    <div class="card">
+      <h2>Spending by Category</h2>
+      <div class="chart-wrap">
+        <canvas id="catChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <h2>All Expenses</h2>
+      {% if expenses %}
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in expenses | reverse %}
+          <tr>
+            <td>{{ e.title }}</td>
+            <td><span class="cat-badge">{{ e.category }}</span></td>
+            <td style="color: var(--muted); font-size:0.82rem;">{{ e.date }}</td>
+            <td class="amt">₹{{ "%.2f"|format(e.amount) }}</td>
+            <td>
+              <form action="/delete/{{ e.id }}" method="POST" style="display:inline;">
+                <button type="submit" class="del-btn" title="Delete">×</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="empty">No expenses yet. Add your first one!</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if category_totals %}
+<script>
+  const labels = {{ category_totals.keys() | list | tojson }};
+  const data   = {{ category_totals.values() | list | tojson }};
+  const colors = ['#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2','#b7e4c7','#d8f3dc'];
+  new Chart(document.getElementById('catChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors.slice(0, labels.length),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          grid: { color: '#f0ede8' },
+          ticks: { font: { family: 'DM Mono', size: 11 }, color: '#7a7068',
+                   callback: v => '₹' + v }
+        },
+        x: { grid: { display: false },
+             ticks: { font: { family: 'DM Sans', size: 11 }, color: '#7a7068' } }
+      }
+    }
+  });
+</script>
+{% endif %}
+</body>
+</html>
